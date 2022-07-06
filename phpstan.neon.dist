@@ -1,0 +1,12 @@
+includes:
+    - phpstan-baseline.neon
+
+parameters:
+    level: max
+    checkMissingIterableValueType: false
+    paths:
+        - src
+        - tests
+    excludePaths:
+        - src/Handler/CloudWatchHandler.php
+        - tests/Handler/CloudWatchHandlerTest.php

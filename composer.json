@@ -1,0 +1,44 @@
+{
+  "name": "arrowsphere/cloudwatch-logs",
+  "type": "library",
+  "description": "Logs management in CloudWatch",
+  "keywords": [
+    "arrowsphere",
+    "cloudwatch",
+    "logs"
+  ],
+  "license": "MIT",
+  "authors": [
+    {
+      "name": "Pierre Feyssaguet",
+      "email": "pierre.feyssaguet@arrow.com"
+    }
+  ],
+  "require": {
+    "php": ">=7.4.0",
+    "aws/aws-sdk-php": "^3.18",
+    "monolog/monolog": "^2.0",
+    "psr/log": "^1.0 || ^2.0 || ^3.0",
+    "ramsey/uuid": "^3.9 || ^4.2"
+  },
+  "require-dev": {
+    "ext-json": "*",
+    "phpstan/phpstan-phpunit": "^1.1",
+    "phpunit/phpunit": "^8.5 || ^9.3"
+  },
+  "autoload": {
+    "psr-4": {
+      "ArrowSphere\\CloudWatchLogs\\": "src"
+    }
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "ArrowSphere\\CloudWatchLogs\\Tests\\": "tests"
+    }
+  },
+  "config": {
+    "sort-packages": true
+  },
+  "minimum-stability": "dev",
+  "prefer-stable": true
+}
