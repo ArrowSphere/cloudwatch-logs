@@ -42,7 +42,7 @@ class ArsHeaderManagerTest extends TestCase
                 'data' => [],
                 'expected' => [
                     'correlationId' => '00000000-0000-0000-0000-0000AAAA1111',
-                    'requestId' => '11111111-1111-1111-1111-0000AAAA1111',
+                    'requestId' => '00000000-0000-0000-0000-0000AAAA1111',
                     'parentId' => '',
                 ],
             ],
@@ -64,7 +64,7 @@ class ArsHeaderManagerTest extends TestCase
                 'expected' => [
                     'correlationId' => '33333333-3333-3333-3333-0000AAAA1111',
                     'requestId' => '00000000-0000-0000-0000-0000AAAA1111',
-                    'parentId' => '44444444-4444-4444-4444-0000AAAA1111',
+                    'parentId' => '',
                 ],
             ],
             'all 3 ids known' => [
@@ -76,7 +76,7 @@ class ArsHeaderManagerTest extends TestCase
                 'expected' => [
                     'correlationId' => '55555555-5555-5555-5555-0000AAAA1111',
                     'requestId' => '00000000-0000-0000-0000-0000AAAA1111',
-                    'parentId' => '77777777-7777-7777-7777-0000AAAA1111',
+                    'parentId' => '66666666-6666-6666-6666-0000AAAA1111',
                 ],
             ],
         ];
