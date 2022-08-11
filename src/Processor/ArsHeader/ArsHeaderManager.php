@@ -44,9 +44,9 @@ final class ArsHeaderManager implements ArsHeaderManagerInterface
         $data = array_change_key_case($data, CASE_LOWER);
 
         // Initialize properties
-        $this->correlationId = $data[ArsRequestIdentifierEnum::ARS_CORRELATION_ID] ?? $factory->uuid4()->toString();
         $this->requestId = $factory->uuid4()->toString();
-        $this->parentId = $data[ArsRequestIdentifierEnum::ARS_PARENT_ID] ?? '';
+        $this->correlationId = $data[ArsRequestIdentifierEnum::ARS_CORRELATION_ID] ?? $this->requestId;
+        $this->parentId = $data[ArsRequestIdentifierEnum::ARS_REQUEST_ID] ?? '';
 
         // (Re)load them into the superglobal $_SERVER
         $_SERVER[ArsRequestIdentifierEnum::ARS_CORRELATION_ID] = $this->correlationId;
