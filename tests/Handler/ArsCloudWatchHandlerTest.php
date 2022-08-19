@@ -24,6 +24,8 @@ use ReflectionException;
  */
 class ArsCloudWatchHandlerTest extends TestCase
 {
+    private const CORRELATION_ID = 'myCorrelationId';
+
     private const REQUEST_ID = 'myRequestId';
 
     /** @var MockObject|CloudWatchLogsClient */
@@ -73,6 +75,7 @@ class ArsCloudWatchHandlerTest extends TestCase
             ->disableOriginalConstructor()
             ->getMock();
 
+        $arsHeaderProcessor->method('getCorrelationId')->willReturn(self::CORRELATION_ID);
         $arsHeaderProcessor->method('getRequestId')->willReturn(self::REQUEST_ID);
         $arsHeaderProcessor->method('__invoke')->willReturnCallback(fn($args) => $args);
 
@@ -119,7 +122,7 @@ class ArsCloudWatchHandlerTest extends TestCase
             ->method('describeLogStreams')
             ->with([
                 'logGroupName' => $this->getGroupName(),
-                'logStreamNamePrefix' => self::REQUEST_ID,
+                'logStreamNamePrefix' => self::CORRELATION_ID . '/' . self::REQUEST_ID,
             ])
             ->willReturn($logStreamResult);
 
@@ -175,7 +178,7 @@ class ArsCloudWatchHandlerTest extends TestCase
             ->method('describeLogStreams')
             ->with([
                 'logGroupName' => $this->getGroupName(),
-                'logStreamNamePrefix' => self::REQUEST_ID,
+                'logStreamNamePrefix' => self::CORRELATION_ID . '/' . self::REQUEST_ID,
             ])
             ->willReturn($logStreamResult);
 
@@ -223,7 +226,7 @@ class ArsCloudWatchHandlerTest extends TestCase
             ->method('describeLogStreams')
             ->with([
                 'logGroupName' => $this->getGroupName(),
-                'logStreamNamePrefix' => self::REQUEST_ID,
+                'logStreamNamePrefix' => self::CORRELATION_ID . '/' . self::REQUEST_ID,
             ])
             ->willReturn($logStreamResult);
 
@@ -268,7 +271,7 @@ class ArsCloudWatchHandlerTest extends TestCase
         $logStreamResult = new Result([
             'logStreams' => [
                 [
-                    'logStreamName' => self::REQUEST_ID . 'bar',
+                    'logStreamName' => self::CORRELATION_ID . '/' . self::REQUEST_ID . 'bar',
                     'uploadSequenceToken' => '49559307804604887372466686181995921714853186581450198324',
                 ],
             ],
@@ -280,7 +283,7 @@ class ArsCloudWatchHandlerTest extends TestCase
             ->method('describeLogStreams')
             ->with([
                 'logGroupName' => $this->getGroupName(),
-                'logStreamNamePrefix' => self::REQUEST_ID,
+                'logStreamNamePrefix' => self::CORRELATION_ID . '/' . self::REQUEST_ID,
             ])
             ->willReturn($logStreamResult);
 
@@ -290,7 +293,7 @@ class ArsCloudWatchHandlerTest extends TestCase
             ->method('createLogStream')
             ->with([
                 'logGroupName' => $this->getGroupName(),
-                'logStreamName' => self::REQUEST_ID,
+                'logStreamName' => self::CORRELATION_ID . '/' . self::REQUEST_ID,
             ]);
 
         $handler = $this->initHandler();
@@ -405,7 +408,7 @@ class ArsCloudWatchHandlerTest extends TestCase
             ->method('describeLogStreams')
             ->with([
                 'logGroupName' => $this->getGroupName(),
-                'logStreamNamePrefix' => self::REQUEST_ID,
+                'logStreamNamePrefix' => self::CORRELATION_ID . '/' . self::REQUEST_ID,
             ])
             ->willReturn($logStreamResult);
 
