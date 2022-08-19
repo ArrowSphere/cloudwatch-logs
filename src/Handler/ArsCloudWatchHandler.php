@@ -98,7 +98,12 @@ final class ArsCloudWatchHandler extends AbstractProcessingHandler
 
         $this->client = $client ?? new CloudWatchLogsClient($sdkParams);
         $this->group = $groupName;
-        $this->stream = $arsHeaderProcessor->getRequestId();
+        $this->stream = sprintf(
+            '%s/%s',
+            $arsHeaderProcessor->getCorrelationId(),
+            $arsHeaderProcessor->getRequestId()
+        );
+
         $this->retention = $retentionDays;
         $this->batchSize = $batchSize;
         $this->tags = $tags;
