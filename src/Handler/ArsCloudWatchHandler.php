@@ -351,4 +351,16 @@ final class ArsCloudWatchHandler extends AbstractProcessingHandler
     {
         $this->flushBuffer();
     }
+
+    /**
+     * @param string $stream
+     *
+     * @return void
+     */
+    public function setStream(string $stream): void
+    {
+        $this->close();
+
+        $this->stream = $stream;
+    }
 }
