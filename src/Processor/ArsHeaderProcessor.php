@@ -16,14 +16,14 @@ use Monolog\Logger;
  */
 final class ArsHeaderProcessor implements ArsHeaderProcessorInterface
 {
-    private ArsHeaderManagerInterface $arsHeaderManager;
+    private ?ArsHeaderManagerInterface $arsHeaderManager;
 
     /**
      * @param ArsHeaderManagerInterface|null $arsHeaderManager
      */
     public function __construct(ArsHeaderManagerInterface $arsHeaderManager = null)
     {
-        $this->arsHeaderManager = $arsHeaderManager ?? ArsHeaderManager::initFromGlobals();
+        $this->arsHeaderManager = $arsHeaderManager;
     }
 
     /**
@@ -44,11 +44,19 @@ final class ArsHeaderProcessor implements ArsHeaderProcessorInterface
     }
 
     /**
+     * @return ArsHeaderManager
+     */
+    protected function getArsHeaderManager(): ArsHeaderManager
+    {
+        return $this->arsHeaderManager ?? ArsHeaderManager::initFromGlobals();
+    }
+
+    /**
      * @return string
      */
     public function getCorrelationId(): string
     {
-        return $this->arsHeaderManager->getCorrelationId();
+        return $this->getArsHeaderManager()->getCorrelationId();
     }
 
     /**
@@ -56,7 +64,7 @@ final class ArsHeaderProcessor implements ArsHeaderProcessorInterface
      */
     public function getRequestId(): string
     {
-        return $this->arsHeaderManager->getRequestId();
+        return $this->getArsHeaderManager()->getRequestId();
     }
 
     /**
@@ -64,6 +72,6 @@ final class ArsHeaderProcessor implements ArsHeaderProcessorInterface
      */
     public function getParentId(): string
     {
-        return $this->arsHeaderManager->getParentId();
+        return $this->getArsHeaderManager()->getParentId();
     }
 }
