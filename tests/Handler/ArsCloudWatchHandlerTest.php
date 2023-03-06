@@ -6,6 +6,7 @@ use ArrowSphere\CloudWatchLogs\Handler\ArsCloudWatchHandler;
 use ArrowSphere\CloudWatchLogs\Processor\ArsHeaderProcessorInterface;
 use Aws\CloudWatchLogs\CloudWatchLogsClient;
 use Aws\CloudWatchLogs\Exception\CloudWatchLogsException;
+use Aws\Command;
 use Aws\Result;
 use DateTimeImmutable;
 use Exception;
@@ -66,10 +67,13 @@ class ArsCloudWatchHandlerTest extends TestCase
     /**
      * @param int $batchSize
      * @param array $tags
+     * @param string $streamName
+     *
      * @return ArsCloudWatchHandler
+     *
      * @throws Exception
      */
-    private function initHandler(int $batchSize = 10000, array $tags = []): ArsCloudWatchHandler
+    private function initHandler(int $batchSize = 10000, array $tags = [], string $streamName = null): ArsCloudWatchHandler
     {
         $arsHeaderProcessor = $this->getMockBuilder(ArsHeaderProcessorInterface::class)
             ->disableOriginalConstructor()
@@ -88,7 +92,8 @@ class ArsCloudWatchHandlerTest extends TestCase
             $batchSize,
             $tags,
             $this->clientMock,
-            $arsHeaderProcessor
+            $arsHeaderProcessor,
+            $streamName
         );
     }
 
@@ -98,38 +103,34 @@ class ArsCloudWatchHandlerTest extends TestCase
      */
     public function testInitializeWithExistingLogGroup(): void
     {
-        $logGroupsResult = new Result(['logGroups' => [['logGroupName' => $this->getGroupName()]]]);
+        $this
+            ->clientMock
+            ->expects($this->never())
+            ->method('describeLogGroups');
+
+        $this
+            ->clientMock
+            ->expects($this->never())
+            ->method('describeLogStreams');
+
+        $this
+            ->clientMock
+            ->expects($this->never())
+            ->method('createLogGroup');
 
         $this
             ->clientMock
             ->expects($this->once())
-            ->method('describeLogGroups')
-            ->with(['logGroupNamePrefix' => $this->getGroupName()])
-            ->willReturn($logGroupsResult);
-
-        $logStreamResult = new Result([
-            'logStreams' => [
-                [
-                    'logStreamName' => self::REQUEST_ID,
-                    'uploadSequenceToken' => '49559307804604887372466686181995921714853186581450198322',
-                ],
-            ],
-        ]);
-
-        $this
-            ->clientMock
-            ->expects($this->once())
-            ->method('describeLogStreams')
+            ->method('createLogStream')
             ->with([
                 'logGroupName' => $this->getGroupName(),
-                'logStreamNamePrefix' => self::CORRELATION_ID . '/' . self::REQUEST_ID,
-            ])
-            ->willReturn($logStreamResult);
+                'logStreamName' => self::CORRELATION_ID . '/' . self::REQUEST_ID
+            ]);
 
         $handler = $this->initHandler();
 
         $reflection = new ReflectionClass($handler);
-        $reflectionMethod = $reflection->getMethod('initialize');
+        $reflectionMethod = $reflection->getMethod('initializeLogStream');
         $reflectionMethod->setAccessible(true);
         $reflectionMethod->invoke($handler);
     }
@@ -145,14 +146,10 @@ class ArsCloudWatchHandlerTest extends TestCase
             'applicationEnvironment' => 'dummyApplicationEnvironment',
         ];
 
-        $logGroupsResult = new Result(['logGroups' => [['logGroupName' => $this->getGroupName() . 'foo']]]);
-
         $this
             ->clientMock
-            ->expects($this->once())
-            ->method('describeLogGroups')
-            ->with(['logGroupNamePrefix' => $this->getGroupName()])
-            ->willReturn($logGroupsResult);
+            ->expects($this->never())
+            ->method('describeLogGroups');
 
         $this
             ->clientMock
@@ -163,29 +160,10 @@ class ArsCloudWatchHandlerTest extends TestCase
                 'tags' => $tags,
             ]);
 
-        $logStreamResult = new Result([
-            'logStreams' => [
-                [
-                    'logStreamName' => self::REQUEST_ID,
-                    'uploadSequenceToken' => '49559307804604887372466686181995921714853186581450198322',
-                ],
-            ],
-        ]);
-
-        $this
-            ->clientMock
-            ->expects($this->once())
-            ->method('describeLogStreams')
-            ->with([
-                'logGroupName' => $this->getGroupName(),
-                'logStreamNamePrefix' => self::CORRELATION_ID . '/' . self::REQUEST_ID,
-            ])
-            ->willReturn($logStreamResult);
-
         $handler = $this->initHandler(10000, $tags);
 
         $reflection = new ReflectionClass($handler);
-        $reflectionMethod = $reflection->getMethod('initialize');
+        $reflectionMethod = $reflection->getMethod('initializeGroup');
         $reflectionMethod->setAccessible(true);
         $reflectionMethod->invoke($handler);
     }
@@ -196,14 +174,10 @@ class ArsCloudWatchHandlerTest extends TestCase
      */
     public function testInitializeWithEmptyTags(): void
     {
-        $logGroupsResult = new Result(['logGroups' => [['logGroupName' => $this->getGroupName() . 'foo']]]);
-
         $this
             ->clientMock
-            ->expects($this->once())
-            ->method('describeLogGroups')
-            ->with(['logGroupNamePrefix' => $this->getGroupName()])
-            ->willReturn($logGroupsResult);
+            ->expects($this->never())
+            ->method('describeLogGroups');
 
         $this
             ->clientMock
@@ -211,29 +185,41 @@ class ArsCloudWatchHandlerTest extends TestCase
             ->method('createLogGroup')
             ->with(['logGroupName' => $this->getGroupName()]); //The empty array of tags is not handed over
 
-        $logStreamResult = new Result([
-            'logStreams' => [
-                [
-                    'logStreamName' => self::REQUEST_ID,
-                    'uploadSequenceToken' => '49559307804604887372466686181995921714853186581450198322',
-                ],
-            ],
-        ]);
-
         $this
             ->clientMock
-            ->expects($this->once())
-            ->method('describeLogStreams')
-            ->with([
-                'logGroupName' => $this->getGroupName(),
-                'logStreamNamePrefix' => self::CORRELATION_ID . '/' . self::REQUEST_ID,
-            ])
-            ->willReturn($logStreamResult);
+            ->expects($this->never())
+            ->method('describeLogStreams');
 
         $handler = $this->initHandler();
 
         $reflection = new ReflectionClass($handler);
-        $reflectionMethod = $reflection->getMethod('initialize');
+        $reflectionMethod = $reflection->getMethod('initializeGroup');
+        $reflectionMethod->setAccessible(true);
+        $reflectionMethod->invoke($handler);
+    }
+
+    /**
+     * @throws ReflectionException
+     * @throws Exception
+     */
+    public function testInitializeWithCustomStreamName(): void
+    {
+        $streamName = 'custom-log-stream-name';
+
+        $this
+            ->clientMock
+            ->expects($this->once())
+            ->method('createLogStream')
+            ->with([
+                'logGroupName' => $this->getGroupName(),
+                'logStreamName' => $streamName,
+            ])
+            ->willReturn([]);
+
+        $handler = $this->initHandler(10000, [], $streamName);
+
+        $reflection = new ReflectionClass($handler);
+        $reflectionMethod = $reflection->getMethod('initializeLogStream');
         $reflectionMethod->setAccessible(true);
         $reflectionMethod->invoke($handler);
     }
@@ -244,14 +230,30 @@ class ArsCloudWatchHandlerTest extends TestCase
      */
     public function testInitializeWithMissingGroupAndStream(): void
     {
-        $logGroupsResult = new Result(['logGroups' => [['logGroupName' => $this->getGroupName() . 'foo']]]);
+        $command = $this->createMock(Command::class);
 
         $this
             ->clientMock
-            ->expects($this->once())
-            ->method('describeLogGroups')
-            ->with(['logGroupNamePrefix' => $this->getGroupName()])
-            ->willReturn($logGroupsResult);
+            ->expects($this->never())
+            ->method('describeLogStreams');
+
+        $this
+            ->clientMock
+            ->expects($this->exactly(2))
+            ->method('createLogStream')
+            ->with([
+                'logGroupName' => $this->getGroupName(),
+                'logStreamName' => self::CORRELATION_ID . '/' . self::REQUEST_ID,
+            ])
+            ->willReturnOnConsecutiveCalls(
+                $this->throwException(new CloudWatchLogsException('ResourceNotFoundException', $command, ['code' => 'ResourceNotFoundException'])),
+                []
+            );
+
+        $this
+            ->clientMock
+            ->expects($this->never())
+            ->method('describeLogGroups');
 
         $this
             ->clientMock
@@ -268,38 +270,10 @@ class ArsCloudWatchHandlerTest extends TestCase
                 'retentionInDays' => 14,
             ]);
 
-        $logStreamResult = new Result([
-            'logStreams' => [
-                [
-                    'logStreamName' => self::CORRELATION_ID . '/' . self::REQUEST_ID . 'bar',
-                    'uploadSequenceToken' => '49559307804604887372466686181995921714853186581450198324',
-                ],
-            ],
-        ]);
-
-        $this
-            ->clientMock
-            ->expects($this->once())
-            ->method('describeLogStreams')
-            ->with([
-                'logGroupName' => $this->getGroupName(),
-                'logStreamNamePrefix' => self::CORRELATION_ID . '/' . self::REQUEST_ID,
-            ])
-            ->willReturn($logStreamResult);
-
-        $this
-            ->clientMock
-            ->expects($this->once())
-            ->method('createLogStream')
-            ->with([
-                'logGroupName' => $this->getGroupName(),
-                'logStreamName' => self::CORRELATION_ID . '/' . self::REQUEST_ID,
-            ]);
-
         $handler = $this->initHandler();
 
         $reflection = new ReflectionClass($handler);
-        $reflectionMethod = $reflection->getMethod('initialize');
+        $reflectionMethod = $reflection->getMethod('initializeLogStream');
         $reflectionMethod->setAccessible(true);
         $reflectionMethod->invoke($handler);
     }
@@ -360,57 +334,59 @@ class ArsCloudWatchHandlerTest extends TestCase
     /**
      * @throws Exception
      */
-    public function testExceptionFromDescribeLogGroups(): void
+    public function testPutLogEventsWithMissingGroupAndStream(): void
     {
-        // e.g. 'User is not authorized to perform logs:DescribeLogGroups'
-        $awsException = $this->getMockBuilder(CloudWatchLogsException::class)
-            ->disableOriginalConstructor()
-            ->getMock();
+        $this->prepareMocks();
 
-        // if this fails ...
-        $this->clientMock
-            ->expects($this->atLeastOnce())
-            ->method('describeLogGroups')
-            ->will($this->throwException($awsException));
+        $command = $this->createMock(Command::class);
 
-        // ... this should not be called:
-        $this->clientMock
-            ->expects($this->never())
-            ->method('describeLogStreams');
+        $this
+            ->clientMock
+            ->expects($this->exactly(2))
+            ->method('createLogStream')
+            ->with([
+                'logGroupName' => $this->getGroupName(),
+                'logStreamName' => self::CORRELATION_ID . '/' . self::REQUEST_ID,
+            ])
+            ->willReturnOnConsecutiveCalls(
+                $this->throwException(new CloudWatchLogsException('ResourceNotFoundException', $command, ['code' => 'ResourceNotFoundException'])),
+                []
+            );
 
-        $this->expectException(CloudWatchLogsException::class);
+        $this
+            ->clientMock
+            ->expects($this->once())
+            ->method('createLogGroup')
+            ->with(['logGroupName' => $this->getGroupName()]);
 
-        $handler = $this->initHandler(0);
-        $handler->handle($this->getRecord(Logger::INFO));
+        /** @phpstan-ignore-next-line Because PutLogEvents is a magic method */
+        $this
+            ->clientMock
+            ->expects($this->exactly(3))
+            ->method('PutLogEvents')
+            ->willReturnOnConsecutiveCalls(
+                $this->throwException(new CloudWatchLogsException('ResourceNotFoundException', $command, ['code' => 'ResourceNotFoundException'])),
+                $this->awsResultMock
+            );
+
+        $handler = $this->initHandler(3);
+
+        foreach ($this->getMultipleRecords() as $record) {
+            $handler->handle($record);
+        }
+
+        $handler->close();
     }
 
     private function prepareMocks(): void
     {
-        $logGroupsResult = new Result(['logGroups' => [['logGroupName' => $this->getGroupName()]]]);
+        $this->clientMock
+            ->expects($this->never())
+            ->method('describeLogGroups');
 
         $this->clientMock
-            ->expects($this->once())
-            ->method('describeLogGroups')
-            ->with(['logGroupNamePrefix' => $this->getGroupName()])
-            ->willReturn($logGroupsResult);
-
-        $logStreamResult = new Result([
-            'logStreams' => [
-                [
-                    'logStreamName' => self::REQUEST_ID,
-                    'uploadSequenceToken' => '49559307804604887372466686181995921714853186581450198322',
-                ],
-            ],
-        ]);
-
-        $this->clientMock
-            ->expects($this->once())
-            ->method('describeLogStreams')
-            ->with([
-                'logGroupName' => $this->getGroupName(),
-                'logStreamNamePrefix' => self::CORRELATION_ID . '/' . self::REQUEST_ID,
-            ])
-            ->willReturn($logStreamResult);
+            ->expects($this->never())
+            ->method('describeLogStreams');
 
         $this->awsResultMock = $this
                 ->getMockBuilder(Result::class)

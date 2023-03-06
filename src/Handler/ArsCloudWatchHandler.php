@@ -47,10 +47,6 @@ final class ArsCloudWatchHandler extends AbstractProcessingHandler
 
     private int $retention;
 
-    private bool $initialized = false;
-
-    private ?string $sequenceToken = null;
-
     private int $batchSize;
 
     private array $buffer = [];
@@ -75,6 +71,7 @@ final class ArsCloudWatchHandler extends AbstractProcessingHandler
      * @param array $tags The tags that should be added to the log group
      * @param CloudWatchLogsClient|null $client
      * @param ArsHeaderProcessorInterface|null $arsHeaderProcessor
+     * @param string|null $streamName
      */
     public function __construct(
         array $sdkParams,
@@ -85,7 +82,8 @@ final class ArsCloudWatchHandler extends AbstractProcessingHandler
         int $batchSize = self::MAX_BATCH_SIZE,
         array $tags = [],
         CloudWatchLogsClient $client = null,
-        ArsHeaderProcessorInterface $arsHeaderProcessor = null
+        ArsHeaderProcessorInterface $arsHeaderProcessor = null,
+        string $streamName = null
     ) {
         if ($batchSize > self::MAX_BATCH_SIZE) {
             throw new InvalidArgumentException(sprintf('Batch size can not be greater than %s', self::MAX_BATCH_SIZE));
@@ -98,7 +96,7 @@ final class ArsCloudWatchHandler extends AbstractProcessingHandler
 
         $this->client = $client ?? new CloudWatchLogsClient($sdkParams);
         $this->group = $groupName;
-        $this->stream = sprintf(
+        $this->stream = $streamName ?? sprintf(
             '%s/%s',
             $arsHeaderProcessor->getCorrelationId(),
             $arsHeaderProcessor->getRequestId()
@@ -147,17 +145,7 @@ final class ArsCloudWatchHandler extends AbstractProcessingHandler
     private function flushBuffer(): void
     {
         if (! empty($this->buffer)) {
-            if (! $this->initialized) {
-                $this->initialize();
-            }
-
-            // send items, retry once with a fresh sequence token
-            try {
-                $this->send($this->buffer);
-            } catch (CloudWatchLogsException $e) {
-                $this->refreshSequenceToken();
-                $this->send($this->buffer);
-            }
+            $this->send($this->buffer);
 
             // clear buffer
             $this->buffer = [];
@@ -189,6 +177,7 @@ final class ArsCloudWatchHandler extends AbstractProcessingHandler
      * http://docs.aws.amazon.com/AmazonCloudWatchLogs/latest/APIReference/API_PutLogEvents.html
      *
      * @param array $record
+     *
      * @return int
      */
     private function getMessageSize(array $record): int
@@ -201,6 +190,7 @@ final class ArsCloudWatchHandler extends AbstractProcessingHandler
      * https://docs.aws.amazon.com/AmazonCloudWatch/latest/logs/cloudwatch_limits_cwl.html
      *
      * @param array $entry
+     *
      * @return array
      */
     private function formatRecords(array $entry): array
@@ -237,7 +227,7 @@ final class ArsCloudWatchHandler extends AbstractProcessingHandler
     private function send(array $entries): void
     {
         // AWS expects to receive entries in chronological order...
-        usort($entries, static fn(array $a, array $b) => $a['timestamp'] <=> $b['timestamp']);
+        usort($entries, static fn (array $a, array $b) => $a['timestamp'] <=> $b['timestamp']);
 
         $data = [
             'logGroupName' => $this->group,
@@ -245,95 +235,76 @@ final class ArsCloudWatchHandler extends AbstractProcessingHandler
             'logEvents' => $entries,
         ];
 
-        if (! empty($this->sequenceToken)) {
-            $data['sequenceToken'] = $this->sequenceToken;
-        }
-
         $this->checkThrottle();
 
-        $response = $this->client->putLogEvents($data);
+        for ($attempts = 1; $attempts <= 2; ++$attempts) {
+            try {
+                $this->client->putLogEvents($data);
 
-        /** @var string|null $nextSequenceToken */
-        $nextSequenceToken = $response->get('nextSequenceToken');
-        $this->sequenceToken = $nextSequenceToken;
+                return;
+            } catch (CloudWatchLogsException $e) {
+                if ($e->getAwsErrorCode() !== 'ResourceNotFoundException' || $attempts === 2) {
+                    throw $e;
+                }
+
+                $this->initializeLogStream();
+            }
+        }
     }
 
     private function initializeGroup(): void
     {
-        // fetch existing groups
-        /** @var array $existingGroups */
-        $existingGroups = $this->client
-            ->describeLogGroups(['logGroupNamePrefix' => $this->group])
-            ->get('logGroups');
-
-        // extract existing groups names
-        $existingGroupsNames = array_column($existingGroups, 'logGroupName');
-
         // create group and set retention policy if not created yet
-        if (! in_array($this->group, $existingGroupsNames, true)) {
-            $createLogGroupArguments = ['logGroupName' => $this->group];
+        $createLogGroupArguments = ['logGroupName' => $this->group];
 
-            if (! empty($this->tags)) {
-                $createLogGroupArguments['tags'] = $this->tags;
+        if (! empty($this->tags)) {
+            $createLogGroupArguments['tags'] = $this->tags;
+        }
+
+        try {
+            $this->client->createLogGroup($createLogGroupArguments);
+        } catch (CloudWatchLogsException $e) {
+            if ($e->getAwsErrorCode() === 'ResourceAlreadyExistsException') {
+                return;
             }
 
-            $this->client->createLogGroup($createLogGroupArguments);
-
-            $this->client->putRetentionPolicy(
-                [
-                    'logGroupName' => $this->group,
-                    'retentionInDays' => $this->retention,
-                ]
-            );
+            throw $e;
         }
+
+        $this->client->putRetentionPolicy(
+            [
+                'logGroupName' => $this->group,
+                'retentionInDays' => $this->retention,
+            ]
+        );
     }
 
-    private function initialize(): void
+    private function initializeLogStream(): void
     {
-        $this->initializeGroup();
-        $this->refreshSequenceToken();
-    }
+        for ($attempts = 1; $attempts <= 2; ++$attempts) {
+            try {
+                $this
+                    ->client
+                    ->createLogStream(
+                        [
+                            'logGroupName' => $this->group,
+                            'logStreamName' => $this->stream,
+                        ]
+                    );
 
-    private function refreshSequenceToken(): void
-    {
-        // fetch existing streams
-        /** @var array $existingStreams */
-        $existingStreams =
-            $this
-                ->client
-                ->describeLogStreams(
-                    [
-                        'logGroupName' => $this->group,
-                        'logStreamNamePrefix' => $this->stream,
-                    ]
-                )->get('logStreams');
-
-        // extract existing streams names
-        $existingStreamsNames = array_map(
-            function (array $stream) {
-                // set sequence token
-                if ($stream['logStreamName'] === $this->stream && isset($stream['uploadSequenceToken'])) {
-                    $this->sequenceToken = $stream['uploadSequenceToken'];
+                return;
+            } catch (CloudWatchLogsException $e) {
+                if ($e->getAwsErrorCode() === 'ResourceAlreadyExistsException') {
+                    return;
                 }
 
-                return $stream['logStreamName'];
-            },
-            $existingStreams
-        );
+                if ($e->getAwsErrorCode() !== 'ResourceNotFoundException' || $attempts === 2) {
+                    throw $e;
+                }
 
-        // create stream if not created
-        if (! in_array($this->stream, $existingStreamsNames, true)) {
-            $this
-                ->client
-                ->createLogStream(
-                    [
-                        'logGroupName' => $this->group,
-                        'logStreamName' => $this->stream,
-                    ]
-                );
+                $this->initializeGroup();
+            }
         }
-
-        $this->initialized = true;
     }
 
     protected function getDefaultFormatter(): FormatterInterface
