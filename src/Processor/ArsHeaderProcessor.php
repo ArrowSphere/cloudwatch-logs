@@ -44,9 +44,9 @@ final class ArsHeaderProcessor implements ArsHeaderProcessorInterface
     }
 
     /**
-     * @return ArsHeaderManager
+     * @return ArsHeaderManagerInterface
      */
-    protected function getArsHeaderManager(): ArsHeaderManager
+    protected function getArsHeaderManager(): ArsHeaderManagerInterface
     {
         return $this->arsHeaderManager ?? ArsHeaderManager::initFromGlobals();
     }
