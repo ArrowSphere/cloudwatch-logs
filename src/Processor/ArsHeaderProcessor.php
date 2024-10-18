@@ -8,6 +8,7 @@ use ArrowSphere\CloudWatchLogs\Processor\ArsHeader\ArsHeaderManager;
 use ArrowSphere\CloudWatchLogs\Processor\ArsHeader\ArsHeaderManagerInterface;
 use ArrowSphere\CloudWatchLogs\Processor\ArsHeader\ArsRequestIdentifierEnum;
 use Monolog\Logger;
+use Monolog\LogRecord;
 
 /**
  * Class ArsHeaderProcessor
@@ -27,18 +28,20 @@ final class ArsHeaderProcessor implements ArsHeaderProcessorInterface
     }
 
     /**
-     * @param array $record
+     * @param LogRecord $record
      *
-     * @return array
-     *
-     * @phpstan-param  Record $record
-     * @phpstan-return Record
+     * @return LogRecord
      */
-    public function __invoke(array $record): array
+    public function __invoke(LogRecord $record): LogRecord
     {
-        $record['extra'][ArsRequestIdentifierEnum::ARS_CORRELATION_ID] = $this->getCorrelationId();
-        $record['extra'][ArsRequestIdentifierEnum::ARS_REQUEST_ID] = $this->getRequestId();
-        $record['extra'][ArsRequestIdentifierEnum::ARS_PARENT_ID] = $this->getParentId();
+        $record->extra = array_merge(
+            $record->extra,
+            [
+                ArsRequestIdentifierEnum::ARS_CORRELATION_ID => $this->getCorrelationId(),
+                ArsRequestIdentifierEnum::ARS_REQUEST_ID     => $this->getRequestId(),
+                ArsRequestIdentifierEnum::ARS_PARENT_ID      => $this->getParentId(),
+            ]
+        );
 
         return $record;
     }
