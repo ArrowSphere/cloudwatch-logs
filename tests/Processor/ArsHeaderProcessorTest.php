@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace ArrowSphere\CloudWatchLogs\Tests\Processor;
 
+use Monolog\Level;
+use DateTimeImmutable;
+use ArrowSphere\CloudWatchLogs\Tests\LogRecordFaker;
 use ArrowSphere\CloudWatchLogs\Processor\ArsHeader\ArsHeaderManagerInterface;
 use ArrowSphere\CloudWatchLogs\Processor\ArsHeaderProcessor;
 use Monolog\Logger;
@@ -31,10 +34,8 @@ class ArsHeaderProcessorTest extends TestCase
         /** @var ArsHeaderManagerInterface $arsHeaderManager */
         $arsHeaderProcessor = new ArsHeaderProcessor($arsHeaderManager);
 
-        /** @phpstan-var Record $record */
-        $record = [
-            'message' => 'hello',
-        ];
+        $datetime = DateTimeImmutable::createFromFormat('U.u', sprintf('%.6F', microtime(true)));
+        $record = LogRecordFaker::getRecord(Level::Info, 'hello', $datetime);
 
         $expected = [
             'message' => 'hello',
@@ -47,6 +48,7 @@ class ArsHeaderProcessorTest extends TestCase
 
         $actual = $arsHeaderProcessor($record);
 
-        self::assertSame($expected, $actual);
+        self::assertSame($expected['message'], $actual->message);
+        self::assertSame($expected['extra'], $actual->extra);
     }
 }

@@ -11,6 +11,7 @@ use Aws\CloudWatchLogs\CloudWatchLogsClient;
 use Aws\CloudWatchLogs\Exception\CloudWatchLogsException;
 use DateTime;
 use InvalidArgumentException;
+use Monolog\LogRecord;
 use Monolog\Formatter\FormatterInterface;
 use Monolog\Handler\AbstractProcessingHandler;
 
@@ -115,7 +116,7 @@ final class ArsCloudWatchHandler extends AbstractProcessingHandler
     /**
      * {@inheritdoc}
      */
-    protected function write(array $record): void
+    protected function write(LogRecord $record): void
     {
         $records = $this->formatRecords($record);
 
@@ -189,24 +190,35 @@ final class ArsCloudWatchHandler extends AbstractProcessingHandler
      * Event size in the batch can not be bigger than 256 KB
      * https://docs.aws.amazon.com/AmazonCloudWatch/latest/logs/cloudwatch_limits_cwl.html
      *
-     * @param array $entry
+     * @param LogRecord $entry
      *
      * @return array
      */
-    private function formatRecords(array $entry): array
+    private function formatRecords(LogRecord $entry): array
     {
-        $entries = str_split($entry['formatted'], self::EVENT_SIZE_LIMIT);
-        $timestamp = $entry['datetime']->format('U.u') * 1000;
-        $records = [];
+        $formatted = $entry->formatted;
 
-        foreach ($entries as $currentEntry) {
-            $records[] = [
-                'message' => $currentEntry,
-                'timestamp' => $timestamp,
-            ];
+        if (is_array($formatted)) {
+            $formatted = json_encode($formatted);
         }
 
-        return $records;
+        if (is_string($formatted)) {
+            $entries = str_split($formatted, self::EVENT_SIZE_LIMIT);
+
+            $timestamp = $entry->datetime->format('U.u') * 1000;
+            $records = [];
+
+            foreach ($entries as $currentEntry) {
+                $records[] = [
+                    'message' => $currentEntry,
+                    'timestamp' => $timestamp,
+                ];
+            }
+
+            return $records;
+        }
+
+        throw new InvalidArgumentException(sprintf('Unhandled message format : %s', gettype($formatted)));
     }
 
     /**

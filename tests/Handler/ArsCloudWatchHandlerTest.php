@@ -2,6 +2,7 @@
 
 namespace ArrowSphere\CloudWatchLogs\Tests\Handler;
 
+use ArrowSphere\CloudWatchLogs\Tests\LogRecordFaker;
 use ArrowSphere\CloudWatchLogs\Handler\ArsCloudWatchHandler;
 use ArrowSphere\CloudWatchLogs\Processor\ArsHeaderProcessorInterface;
 use Aws\CloudWatchLogs\CloudWatchLogsClient;
@@ -11,6 +12,7 @@ use Aws\Result;
 use DateTimeImmutable;
 use Exception;
 use InvalidArgumentException;
+use Monolog\Level;
 use Monolog\Logger;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -303,7 +305,7 @@ class ArsCloudWatchHandlerTest extends TestCase
 
         $handler = $this->initHandler(1);
 
-        $handler->handle($this->getRecord(Logger::DEBUG));
+        $handler->handle(LogRecordFaker::getRecord(Level::Debug));
 
         $handler->close();
     }
@@ -324,7 +326,7 @@ class ArsCloudWatchHandlerTest extends TestCase
 
         $handler = $this->initHandler(3);
 
-        foreach ($this->getMultipleRecords() as $record) {
+        foreach (LogRecordFaker::getMultipleRecords() as $record) {
             $handler->handle($record);
         }
 
@@ -366,12 +368,13 @@ class ArsCloudWatchHandlerTest extends TestCase
             ->method('PutLogEvents')
             ->willReturnOnConsecutiveCalls(
                 $this->throwException(new CloudWatchLogsException('ResourceNotFoundException', $command, ['code' => 'ResourceNotFoundException'])),
-                $this->awsResultMock
+                $this->awsResultMock,
+                $this->awsResultMock,
             );
 
         $handler = $this->initHandler(3);
 
-        foreach ($this->getMultipleRecords() as $record) {
+        foreach (LogRecordFaker::getMultipleRecords() as $record) {
             $handler->handle($record);
         }
 
@@ -421,10 +424,11 @@ class ArsCloudWatchHandlerTest extends TestCase
         $records = [];
 
         for ($i = 1; $i <= 4; ++$i) {
-            $record = $this->getRecord(Logger::INFO, 'record' . $i);
-            /** @var DateTimeImmutable $datetime */
-            $datetime = DateTimeImmutable::createFromFormat('U', (string)(time() + $i));
-            $record['datetime'] = $datetime;
+            $record = LogRecordFaker::getRecord(
+                Level::Info,
+                'record' . $i,
+                DateTimeImmutable::createFromFormat('U', (string) (time() + $i))
+            );
             $records[] = $record;
         }
 
@@ -435,43 +439,5 @@ class ArsCloudWatchHandlerTest extends TestCase
         $handler->handle($records[1]);
 
         $handler->close();
-    }
-
-    /**
-     * @param int $level
-     * @param string $message
-     * @return array
-     *
-     * @phpstan-param  Level $level
-     * @phpstan-return Record
-     */
-    private function getRecord(int $level = Logger::WARNING, string $message = 'test'): array
-    {
-        /** @var DateTimeImmutable $datetime */
-        $datetime = DateTimeImmutable::createFromFormat('U.u', sprintf('%.6F', microtime(true)));
-
-        return [
-            'message' => $message,
-            'context' => [],
-            'level' => $level,
-            'level_name' => Logger::getLevelName($level),
-            'channel' => 'test',
-            'datetime' => $datetime,
-            'extra' => [],
-        ];
-    }
-
-    /**
-     * @return array
-     */
-    private function getMultipleRecords(): array
-    {
-        return [
-            $this->getRecord(Logger::DEBUG, 'debug message 1'),
-            $this->getRecord(Logger::DEBUG, 'debug message 2'),
-            $this->getRecord(Logger::INFO, 'information'),
-            $this->getRecord(Logger::WARNING, 'warning'),
-            $this->getRecord(Logger::ERROR, 'error'),
-        ];
     }
 }

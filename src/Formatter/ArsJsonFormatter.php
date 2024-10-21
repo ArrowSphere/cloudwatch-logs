@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace ArrowSphere\CloudWatchLogs\Formatter;
 
+use Monolog\LogRecord;
 use ArrowSphere\CloudWatchLogs\Processor\ArsHeader\ArsRequestIdentifierEnum;
 use Monolog\Formatter\JsonFormatter;
 use RuntimeException;
@@ -13,9 +14,9 @@ use RuntimeException;
  */
 final class ArsJsonFormatter extends JsonFormatter
 {
-    public function format(array $record): string
+    public function format(LogRecord $record): string
     {
-        $normalized = $this->normalize($record);
+        $normalized = $this->normalizeRecord($record);
         if (! is_array($normalized)) {
             throw new RuntimeException('Cannot get a normalized array to format the record logs');
         }
