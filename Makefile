@@ -8,7 +8,6 @@ help:
 	@echo "  static-phpstan-update-baseline to regenerate the phpstan baseline file"
 	@echo "  static-codestyle-fix           to run php-cs-fixer on the codebase, writing the changes"
 	@echo "  static-codestyle-check         to run php-cs-fixer on the codebase"
-	@echo "  static-psalm-generate-baseline to generate the psalm baseline"
 
 test:
 	vendor/bin/phpunit
@@ -22,13 +21,13 @@ coverage-show:
 static: static-phpstan static-codestyle-check
 
 static-phpstan:
-	docker run --rm -it -e REQUIRE_DEV=true -v ${PWD}:/app -w /app oskarstark/phpstan-ga:1.4.6 analyze $(PHPSTAN_PARAMS)
+	docker run --rm -it -e REQUIRE_DEV=true -v ${PWD}:/app -w /app oskarstark/phpstan-ga analyze $(PHPSTAN_PARAMS)
 
 static-phpstan-update-baseline:
 	$(MAKE) static-phpstan PHPSTAN_PARAMS="--generate-baseline"
 
 static-codestyle-fix:
-	docker run --rm -it -v ${PWD}:/app -w /app oskarstark/php-cs-fixer-ga:2.16.4 --diff-format udiff $(CS_PARAMS)
+	docker run --rm -it -v ${PWD}:/app -w /app oskarstark/php-cs-fixer-ga . --diff $(CS_PARAMS)
 
 static-codestyle-check:
-	$(MAKE) static-codestyle-fix CS_PARAMS="--dry-run"
+	$(MAKE) static-codestyle-fix CS_PARAMS="--dry-run -vvv"

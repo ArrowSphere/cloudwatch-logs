@@ -1,6 +1,13 @@
 <?php
 
-$config = PhpCsFixer\Config::create()
+use PhpCsFixer\Config;
+use PhpCsFixer\Finder;
+
+$finder = (new Finder())
+    ->in(__DIR__)
+;
+
+$config = Config::create()
     ->setRiskyAllowed(true)
     ->setRules([
         '@PSR2' => true,
@@ -76,12 +83,7 @@ $config = PhpCsFixer\Config::create()
         'yoda_style' => false,
         // 'native_function_invocation' => true,
     ])
-    ->setFinder(
-        PhpCsFixer\Finder::create()
-            ->in(__DIR__.'/src')
-            ->in(__DIR__.'/tests')
-            ->name('*.php')
-    )
+    ->setFinder($finder)
 ;
 
 return $config;
