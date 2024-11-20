@@ -7,8 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed phpunit deprecations
 - Fixed CHANGELOG
 - Fixed phpstan errors
-- Upgraded Github actions
-- Fixed auto-publish action
+- Fixed and upgraded Github actions
 
 ## [2.0.0] - 2024-11-18
 - Update monolog dependency to 3.0

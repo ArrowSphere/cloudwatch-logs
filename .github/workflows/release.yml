@@ -17,7 +17,7 @@ jobs:
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
 
       - name: Create release branch
         run: git checkout -b release/${{ github.event.inputs.version }}
@@ -48,9 +48,9 @@ jobs:
 
       - name: Create pull request
         id: create-pull-request
-        uses: thomaseizinger/create-pull-request@1.0.0
+        uses: thomaseizinger/create-pull-request@1.4.0
         with:
-          github-token: ${{ secrets.REPO_SCOPED_TOKEN }}
+          github_token: ${{ secrets.REPO_SCOPED_TOKEN }}
           head: release/${{ github.event.inputs.version }}
           base: master
           title: Release version ${{ github.event.inputs.version }}

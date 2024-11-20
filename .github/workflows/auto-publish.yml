@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     if: github.event.pull_request.merged == true && startsWith(github.event.pull_request.head.ref, 'release/')
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
 
       - name: Extract version from branch name (for release branches)
         run: |
@@ -28,7 +28,7 @@ jobs:
           version: ${{ env.RELEASE_VERSION }}
 
       - name: Create Release
-        uses: thomaseizinger/create-release@1.0.0
+        uses: thomaseizinger/create-release@2.0.0
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           target_commitish: ${{ github.event.pull_request.merge_commit_sha }}
