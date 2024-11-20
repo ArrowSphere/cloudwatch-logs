@@ -15,12 +15,12 @@ class LogRecordFaker
      *
      * @return LogRecord
      */
-    static public function getRecord(
+    public static function getRecord(
         Level $level = Level::Warning,
         string $message = 'test',
         DateTimeImmutable|bool $datetime = null
     ): LogRecord {
-        if (null === $datetime) {
+        if ($datetime === null) {
             /** @var DateTimeImmutable $datetime */
             $datetime = DateTimeImmutable::createFromFormat('U.u', sprintf('%.6F', microtime(true)));
         }
@@ -42,7 +42,7 @@ class LogRecordFaker
     /**
      * @return array
      */
-    static public function getMultipleRecords(): array
+    public static function getMultipleRecords(): array
     {
         return [
             static::getRecord(Level::Debug, 'debug message 1'),
@@ -51,4 +51,5 @@ class LogRecordFaker
             static::getRecord(Level::Warning, 'warning'),
             static::getRecord(Level::Error, 'error'),
         ];
-    }}
+    }
+}

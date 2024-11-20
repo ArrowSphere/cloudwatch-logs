@@ -4,24 +4,26 @@ declare(strict_types=1);
 
 namespace ArrowSphere\CloudWatchLogs\Tests\Formatter;
 
+use ArrowSphere\CloudWatchLogs\Formatter\ArsJsonFormatter;
+use DateTimeImmutable;
+use Generator;
 use JsonException;
 use Monolog\Level;
 use Monolog\LogRecord;
 use PHPUnit\Framework\TestCase;
-use ArrowSphere\CloudWatchLogs\Formatter\ArsJsonFormatter;
 
 class ArsJsonFormatterTest extends TestCase
 {
     /**
-     * @return \Generator
+     * @return Generator
      */
-    public function providerFormat(): \Generator
+    public static function providerFormat(): Generator
     {
         $channel = 'default';
         $message = 'my message';
 
         yield [
-            'record'   => new LogRecord(new \DateTimeImmutable(), $channel, Level::Debug, $message),
+            'record'   => new LogRecord(new DateTimeImmutable(), $channel, Level::Debug, $message),
             'expected' => [
                 'type'    => 'DEBUG',
                 'message' => $message,
@@ -32,7 +34,7 @@ class ArsJsonFormatterTest extends TestCase
 
         yield [
             'record'   => new LogRecord(
-                new \DateTimeImmutable(),
+                new DateTimeImmutable(),
                 $channel,
                 Level::Info,
                 $message,

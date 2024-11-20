@@ -11,12 +11,14 @@ use Aws\CloudWatchLogs\CloudWatchLogsClient;
 use Aws\CloudWatchLogs\Exception\CloudWatchLogsException;
 use DateTime;
 use InvalidArgumentException;
-use Monolog\LogRecord;
 use Monolog\Formatter\FormatterInterface;
 use Monolog\Handler\AbstractProcessingHandler;
+use Monolog\LogRecord;
 
 /**
  * Class ArsCloudWatchHandler
+ *
+ * @phpstan-type Record array{message: string, timestamp: float|int}
  */
 final class ArsCloudWatchHandler extends AbstractProcessingHandler
 {
@@ -50,8 +52,10 @@ final class ArsCloudWatchHandler extends AbstractProcessingHandler
 
     private int $batchSize;
 
+    /** @var list<Record> */
     private array $buffer = [];
 
+    /** @var list<string> */
     private array $tags;
 
     private int $currentDataAmount = 0;
@@ -63,13 +67,13 @@ final class ArsCloudWatchHandler extends AbstractProcessingHandler
     /**
      * ArsCloudWatchHandler constructor.
      *
-     * @param array $sdkParams The parameters to provide to AWS.
+     * @param array<string, string|mixed> $sdkParams The parameters to provide to AWS.
      * @param string $accountAlias Account alias, to create the log group name.
      * @param string $stage Environment stage, to create the log group name.
      * @param string $application Application name, to create the log group name.
      * @param int $retentionDays Days to keep logs, 90 by default.
      * @param int $batchSize How many log entries to store in memory before sending them to AWS, 10000 by default.
-     * @param array $tags The tags that should be added to the log group
+     * @param list<string> $tags The tags that should be added to the log group
      * @param CloudWatchLogsClient|null $client
      * @param ArsHeaderProcessorInterface|null $arsHeaderProcessor
      * @param string|null $streamName
@@ -134,7 +138,7 @@ final class ArsCloudWatchHandler extends AbstractProcessingHandler
     }
 
     /**
-     * @param array $record
+     * @param Record $record
      */
     private function addToBuffer(array $record): void
     {
@@ -177,7 +181,7 @@ final class ArsCloudWatchHandler extends AbstractProcessingHandler
     /**
      * http://docs.aws.amazon.com/AmazonCloudWatchLogs/latest/APIReference/API_PutLogEvents.html
      *
-     * @param array $record
+     * @param Record $record
      *
      * @return int
      */
@@ -192,7 +196,7 @@ final class ArsCloudWatchHandler extends AbstractProcessingHandler
      *
      * @param LogRecord $entry
      *
-     * @return array
+     * @return list<Record>
      */
     private function formatRecords(LogRecord $entry): array
     {
@@ -232,7 +236,7 @@ final class ArsCloudWatchHandler extends AbstractProcessingHandler
      *  - The maximum number of log events in a batch is 10,000.
      *  - A batch of log events in a single request cannot span more than 24 hours. Otherwise, the operation fails.
      *
-     * @param array $entries
+     * @param list<Record> $entries
      *
      * @throws CloudWatchLogsException Thrown by putLogEvents for example in case of an invalid sequence token
      */
@@ -321,7 +325,6 @@ final class ArsCloudWatchHandler extends AbstractProcessingHandler
 
     protected function getDefaultFormatter(): FormatterInterface
     {
-        // return new LineFormatter("%channel%: %level_name%: %message% %context% %extra%", null, false, true);
         $arsJsonFormatter = new ArsJsonFormatter();
 
         // Default depth is 9 which is not enough for our needs
@@ -337,8 +340,6 @@ final class ArsCloudWatchHandler extends AbstractProcessingHandler
 
     /**
      * @param string $stream
-     *
-     * @return void
      */
     public function setStream(string $stream): void
     {

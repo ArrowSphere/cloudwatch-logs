@@ -7,13 +7,10 @@ namespace ArrowSphere\CloudWatchLogs\Processor;
 use ArrowSphere\CloudWatchLogs\Processor\ArsHeader\ArsHeaderManager;
 use ArrowSphere\CloudWatchLogs\Processor\ArsHeader\ArsHeaderManagerInterface;
 use ArrowSphere\CloudWatchLogs\Processor\ArsHeader\ArsRequestIdentifierEnum;
-use Monolog\Logger;
 use Monolog\LogRecord;
 
 /**
  * Class ArsHeaderProcessor
- *
- * @phpstan-import-type Record from Logger
  */
 final class ArsHeaderProcessor implements ArsHeaderProcessorInterface
 {

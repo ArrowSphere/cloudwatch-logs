@@ -35,7 +35,7 @@ class ArsHeaderManagerTest extends TestCase
         );
     }
 
-    public function providerCreation(): array
+    public static function providerCreation(): array
     {
         return [
             'empty data' => [

@@ -4,22 +4,33 @@ declare(strict_types=1);
 
 namespace ArrowSphere\CloudWatchLogs\Formatter;
 
-use Monolog\LogRecord;
 use ArrowSphere\CloudWatchLogs\Processor\ArsHeader\ArsRequestIdentifierEnum;
 use Monolog\Formatter\JsonFormatter;
-use RuntimeException;
+use Monolog\LogRecord;
+use stdClass;
 
 /**
  * Class ArsJsonFormatter
+ *
+ * @phpstan-type NormalizedRecord array{
+ *     level: int,
+ *     level_name?: string,
+ *     message: string,
+ *     datetime: string,
+ *     context: array{
+ *         tags: list<string>,
+ *         entries: mixed,
+ *         extra?: array<string, mixed>
+ *     }|stdClass,
+ *     extra: array<string, mixed>|stdClass,
+ * }|array<void>
  */
 final class ArsJsonFormatter extends JsonFormatter
 {
     public function format(LogRecord $record): string
     {
+        /** @var NormalizedRecord $normalized */
         $normalized = $this->normalizeRecord($record);
-        if (! is_array($normalized)) {
-            throw new RuntimeException('Cannot get a normalized array to format the record logs');
-        }
 
         if ($this->ignoreEmptyContextAndExtra) {
             if (empty($normalized['context'])) {
@@ -28,6 +39,14 @@ final class ArsJsonFormatter extends JsonFormatter
             if (empty($normalized['extra'])) {
                 unset($normalized['extra']);
             }
+        }
+
+        if (isset($normalized['context']) && ! is_array($normalized['context'])) {
+            $normalized['context'] = [];
+        }
+
+        if (isset($normalized['extra']) && ! is_array($normalized['extra'])) {
+            $normalized['extra'] = [];
         }
 
         $context = $normalized['context'] ?? [];

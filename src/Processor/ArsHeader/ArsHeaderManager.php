@@ -33,7 +33,7 @@ final class ArsHeaderManager implements ArsHeaderManagerInterface
     /**
      * ArsHeaderManager constructor.
      *
-     * @param array $data The data array when the ids can potentially be found.
+     * @param array<string, string> $data The data array when the ids can potentially be found.
      * @param UuidFactoryInterface|null $factory The factory to generate uuids.
      */
     public function __construct(array $data, UuidFactoryInterface $factory = null)

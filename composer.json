@@ -16,15 +16,14 @@
   ],
   "require": {
     "php": ">=8.0",
-    "aws/aws-sdk-php": "^3.18",
+    "aws/aws-sdk-php": "^3.304",
     "monolog/monolog": "^3.0",
     "psr/log": "^1.0 || ^2.0 || ^3.0",
     "ramsey/uuid": "^3.9 || ^4.2"
   },
   "require-dev": {
     "ext-json": "*",
-    "phpstan/phpstan-phpunit": "^1.1",
-    "phpunit/phpunit": "^9.3 || ^10.0"
+    "phpunit/phpunit": "^10.5.32"
   },
   "autoload": {
     "psr-4": {

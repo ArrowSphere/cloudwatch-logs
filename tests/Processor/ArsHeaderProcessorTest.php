@@ -4,19 +4,16 @@ declare(strict_types=1);
 
 namespace ArrowSphere\CloudWatchLogs\Tests\Processor;
 
-use Monolog\Level;
-use DateTimeImmutable;
-use ArrowSphere\CloudWatchLogs\Tests\LogRecordFaker;
 use ArrowSphere\CloudWatchLogs\Processor\ArsHeader\ArsHeaderManagerInterface;
 use ArrowSphere\CloudWatchLogs\Processor\ArsHeaderProcessor;
-use Monolog\Logger;
+use ArrowSphere\CloudWatchLogs\Tests\LogRecordFaker;
+use DateTimeImmutable;
+use Monolog\Level;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 
 /**
  * Class ArsHeaderProcessorTest
- *
- * @phpstan-import-type Record from Logger
  */
 class ArsHeaderProcessorTest extends TestCase
 {
