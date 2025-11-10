@@ -24,9 +24,9 @@ class ArsHeaderProcessorTest extends TestCase
             ->disableOriginalConstructor()
             ->getMock();
 
-        $arsHeaderManager->expects(self::once())->method('getCorrelationId')->willReturn('correlationId');
-        $arsHeaderManager->expects(self::once())->method('getRequestId')->willReturn('requestId');
-        $arsHeaderManager->expects(self::once())->method('getParentId')->willReturn('parentId');
+        $arsHeaderManager->expects($this->once())->method('getCorrelationId')->willReturn('correlationId');
+        $arsHeaderManager->expects($this->once())->method('getRequestId')->willReturn('requestId');
+        $arsHeaderManager->expects($this->once())->method('getParentId')->willReturn('parentId');
 
         /** @var ArsHeaderManagerInterface $arsHeaderManager */
         $arsHeaderProcessor = new ArsHeaderProcessor($arsHeaderManager);

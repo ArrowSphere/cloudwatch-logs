@@ -5,6 +5,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- Fixed recuperation of correlation/request/parent ids from headers
+
 ## [2.0.1] - 2024-11-20
 
 - Fixed phpunit deprecations

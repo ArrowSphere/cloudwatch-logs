@@ -41,12 +41,12 @@ final class ArsHeaderManager implements ArsHeaderManagerInterface
         $factory ??= Uuid::getFactory();
 
         // Headers should be case-insensitive
-        $data = array_change_key_case($data, CASE_LOWER);
+        $data = array_change_key_case($data, CASE_UPPER);
 
         // Initialize properties
         $this->requestId = $factory->uuid4()->toString();
-        $this->correlationId = $data[ArsRequestIdentifierEnum::ARS_CORRELATION_ID] ?? $this->requestId;
-        $this->parentId = $data[ArsRequestIdentifierEnum::ARS_REQUEST_ID] ?? '';
+        $this->correlationId = $data[self::getHeaderName(ArsRequestIdentifierEnum::ARS_CORRELATION_ID)] ?? $this->requestId;
+        $this->parentId = $data[self::getHeaderName(ArsRequestIdentifierEnum::ARS_REQUEST_ID)] ?? '';
 
         // (Re)load them into the superglobal $_SERVER
         $_SERVER[ArsRequestIdentifierEnum::ARS_CORRELATION_ID] = $this->correlationId;
@@ -100,5 +100,16 @@ final class ArsHeaderManager implements ArsHeaderManagerInterface
         }
 
         return self::$instance;
+    }
+
+    /**
+     * Returns the formatted header name for the $_SERVER superglobal.
+     *
+     * @param string $headerName
+     * @return string
+     */
+    public static function getHeaderName(string $headerName): string
+    {
+        return 'HTTP_' . str_replace('-', '_', strtoupper($headerName));
     }
 }
