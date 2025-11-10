@@ -50,17 +50,7 @@ class ArsCloudWatchHandlerTest extends TestCase
     protected function setUp(): void
     {
         $this->clientMock = $this
-            ->getMockBuilder(CloudWatchLogsClient::class)
-            ->addMethods(
-                [
-                    'describeLogGroups',
-                    'CreateLogGroup',
-                    'PutRetentionPolicy',
-                    'DescribeLogStreams',
-                    'CreateLogStream',
-                    'PutLogEvents',
-                ]
-            )
+            ->getMockBuilder(TestCloudWatchLogsClient::class)
             ->disableOriginalConstructor()
             ->getMock();
     }
@@ -73,7 +63,7 @@ class ArsCloudWatchHandlerTest extends TestCase
     /**
      * @param int $batchSize
      * @param array $tags
-     * @param string $streamName
+     * @param string|null $streamName
      *
      * @return ArsCloudWatchHandler
      *
@@ -111,22 +101,22 @@ class ArsCloudWatchHandlerTest extends TestCase
     {
         $this
             ->clientMock
-            ->expects(self::never())
+            ->expects($this->never())
             ->method('describeLogGroups');
 
         $this
             ->clientMock
-            ->expects(self::never())
+            ->expects($this->never())
             ->method('describeLogStreams');
 
         $this
             ->clientMock
-            ->expects(self::never())
+            ->expects($this->never())
             ->method('createLogGroup');
 
         $this
             ->clientMock
-            ->expects(self::once())
+            ->expects($this->once())
             ->method('createLogStream')
             ->with([
                 'logGroupName' => $this->getGroupName(),
@@ -154,12 +144,12 @@ class ArsCloudWatchHandlerTest extends TestCase
 
         $this
             ->clientMock
-            ->expects(self::never())
+            ->expects($this->never())
             ->method('describeLogGroups');
 
         $this
             ->clientMock
-            ->expects(self::once())
+            ->expects($this->once())
             ->method('createLogGroup')
             ->with([
                 'logGroupName' => $this->getGroupName(),
@@ -182,18 +172,18 @@ class ArsCloudWatchHandlerTest extends TestCase
     {
         $this
             ->clientMock
-            ->expects(self::never())
+            ->expects($this->never())
             ->method('describeLogGroups');
 
         $this
             ->clientMock
-            ->expects(self::once())
+            ->expects($this->once())
             ->method('createLogGroup')
             ->with(['logGroupName' => $this->getGroupName()]); //The empty array of tags is not handed over
 
         $this
             ->clientMock
-            ->expects(self::never())
+            ->expects($this->never())
             ->method('describeLogStreams');
 
         $handler = $this->initHandler();
@@ -214,7 +204,7 @@ class ArsCloudWatchHandlerTest extends TestCase
 
         $this
             ->clientMock
-            ->expects(self::once())
+            ->expects($this->once())
             ->method('createLogStream')
             ->with([
                 'logGroupName' => $this->getGroupName(),
@@ -240,36 +230,36 @@ class ArsCloudWatchHandlerTest extends TestCase
 
         $this
             ->clientMock
-            ->expects(self::never())
+            ->expects($this->never())
             ->method('describeLogStreams');
 
         $this
             ->clientMock
-            ->expects(self::exactly(2))
+            ->expects($this->exactly(2))
             ->method('createLogStream')
             ->with([
                 'logGroupName' => $this->getGroupName(),
                 'logStreamName' => self::CORRELATION_ID . '/' . self::REQUEST_ID,
             ])
             ->willReturnOnConsecutiveCalls(
-                self::throwException(new CloudWatchLogsException('ResourceNotFoundException', $command, ['code' => 'ResourceNotFoundException'])),
+                $this->throwException(new CloudWatchLogsException('ResourceNotFoundException', $command, ['code' => 'ResourceNotFoundException'])),
                 []
             );
 
         $this
             ->clientMock
-            ->expects(self::never())
+            ->expects($this->never())
             ->method('describeLogGroups');
 
         $this
             ->clientMock
-            ->expects(self::once())
+            ->expects($this->once())
             ->method('createLogGroup')
             ->with(['logGroupName' => $this->getGroupName()]);
 
         $this
             ->clientMock
-            ->expects(self::once())
+            ->expects($this->once())
             ->method('putRetentionPolicy')
             ->with([
                 'logGroupName' => $this->getGroupName(),
@@ -303,7 +293,7 @@ class ArsCloudWatchHandlerTest extends TestCase
         /** @phpstan-ignore-next-line Because PutLogEvents is a magic method */
         $this
             ->clientMock
-            ->expects(self::once())
+            ->expects($this->once())
             ->method('PutLogEvents')
             ->willReturn($this->awsResultMock);
 
@@ -324,7 +314,7 @@ class ArsCloudWatchHandlerTest extends TestCase
         /** @phpstan-ignore-next-line Because PutLogEvents is a magic method */
         $this
             ->clientMock
-            ->expects(self::exactly(2))
+            ->expects($this->exactly(2))
             ->method('PutLogEvents')
             ->willReturn($this->awsResultMock);
 
@@ -348,30 +338,30 @@ class ArsCloudWatchHandlerTest extends TestCase
 
         $this
             ->clientMock
-            ->expects(self::exactly(2))
+            ->expects($this->exactly(2))
             ->method('createLogStream')
             ->with([
                 'logGroupName' => $this->getGroupName(),
                 'logStreamName' => self::CORRELATION_ID . '/' . self::REQUEST_ID,
             ])
             ->willReturnOnConsecutiveCalls(
-                self::throwException(new CloudWatchLogsException('ResourceNotFoundException', $command, ['code' => 'ResourceNotFoundException'])),
+                $this->throwException(new CloudWatchLogsException('ResourceNotFoundException', $command, ['code' => 'ResourceNotFoundException'])),
                 []
             );
 
         $this
             ->clientMock
-            ->expects(self::once())
+            ->expects($this->once())
             ->method('createLogGroup')
             ->with(['logGroupName' => $this->getGroupName()]);
 
         /** @phpstan-ignore-next-line Because PutLogEvents is a magic method */
         $this
             ->clientMock
-            ->expects(self::exactly(3))
+            ->expects($this->exactly(3))
             ->method('PutLogEvents')
             ->willReturnOnConsecutiveCalls(
-                self::throwException(new CloudWatchLogsException('ResourceNotFoundException', $command, ['code' => 'ResourceNotFoundException'])),
+                $this->throwException(new CloudWatchLogsException('ResourceNotFoundException', $command, ['code' => 'ResourceNotFoundException'])),
                 $this->awsResultMock,
                 $this->awsResultMock,
             );
@@ -388,11 +378,11 @@ class ArsCloudWatchHandlerTest extends TestCase
     private function prepareMocks(): void
     {
         $this->clientMock
-            ->expects(self::never())
+            ->expects($this->never())
             ->method('describeLogGroups');
 
         $this->clientMock
-            ->expects(self::never())
+            ->expects($this->never())
             ->method('describeLogStreams');
 
         $this->awsResultMock = $this
@@ -411,7 +401,7 @@ class ArsCloudWatchHandlerTest extends TestCase
 
         /** @phpstan-ignore-next-line Because PutLogEvents is a magic method */
         $this->clientMock
-            ->expects(self::once())
+            ->expects($this->once())
             ->method('PutLogEvents')
             ->willReturnCallback(function (array $data) {
                 $this->assertStringContainsString('record1', $data['logEvents'][0]['message']);
@@ -443,5 +433,32 @@ class ArsCloudWatchHandlerTest extends TestCase
         $handler->handle($records[1]);
 
         $handler->close();
+    }
+}
+
+class TestCloudWatchLogsClient extends CloudWatchLogsClient
+{
+    public function describeLogGroups()
+    {
+    }
+
+    public function CreateLogGroup()
+    {
+    }
+
+    public function PutRetentionPolicy()
+    {
+    }
+
+    public function DescribeLogStreams()
+    {
+    }
+
+    public function CreateLogStream()
+    {
+    }
+
+    public function PutLogEvents()
+    {
     }
 }

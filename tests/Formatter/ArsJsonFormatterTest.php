@@ -10,6 +10,7 @@ use Generator;
 use JsonException;
 use Monolog\Level;
 use Monolog\LogRecord;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
 class ArsJsonFormatterTest extends TestCase
@@ -84,14 +85,7 @@ class ArsJsonFormatterTest extends TestCase
         ];
     }
 
-    /**
-     * @dataProvider providerFormat
-     *
-     * @param LogRecord $record
-     * @param array     $expected
-     *
-     * @throws JsonException
-     */
+    #[DataProvider('providerFormat')]
     public function testFormat(LogRecord $record, array $expected): void
     {
         $actual = (new ArsJsonFormatter())->format($record);
