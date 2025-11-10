@@ -5,6 +5,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.0.2] - 2025-11-10
+
 - Fixed recuperation of correlation/request/parent ids from headers
 
 ## [2.0.1] - 2024-11-20
@@ -44,7 +46,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added `ArsJsonFormatter` to provide the correct format for the logs in AWS CloudWatch.
 - Added `ArsHeaderProcessor` to provide the 3 header ids to each log entry
 
-[Unreleased]: https://github.com/ArrowSphere/cloudwatch-logs/compare/2.0.1...HEAD
+[Unreleased]: https://github.com/ArrowSphere/cloudwatch-logs/compare/2.0.2...HEAD
+[2.0.2]: https://github.com/ArrowSphere/cloudwatch-logs/compare/2.0.1...2.0.2
 [2.0.1]: https://github.com/ArrowSphere/cloudwatch-logs/compare/2.0.0...2.0.1
 [2.0.0]: https://github.com/ArrowSphere/cloudwatch-logs/compare/1.2.0...2.0.0
 [1.2.0]: https://github.com/ArrowSphere/cloudwatch-logs/compare/1.1.1...1.2.0
